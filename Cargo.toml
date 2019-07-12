@@ -1,0 +1,8 @@
+[package]
+name = "taskmanager-rs"
+version = "0.1.0"
+authors = ["Zili Xiang <zx77@cornell.edu>"]
+edition = "2018"
+
+[dependencies]
+actix-web = "1.0"
