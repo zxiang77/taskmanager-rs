@@ -1,8 +1,12 @@
 [package]
-name = "taskmanager-rs"
+name = "taskmanager"
 version = "0.1.0"
 authors = ["Zili Xiang <zx77@cornell.edu>"]
 edition = "2018"
 
 [dependencies]
 actix-web = "1.0"
+chrono = "0.4.7"
+postgres = "0.16.0-rc.2"
+num = "0.2"
+num-derive = "0.2.5"

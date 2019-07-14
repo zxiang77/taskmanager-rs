@@ -1,5 +1,7 @@
 use actix_web::{web, App, Responder, HttpServer, HttpResponse};
 use std::cell::Cell;
+use actix_web::middleware::Logger;
+use taskmanager::task::Task;
 
 fn index(info: web::Path<(String, u32)>) -> impl Responder {
     format!("hello, {}! id: {}", info.0, info.1)
@@ -21,10 +23,15 @@ impl AppState {
     }
 }
 
-fn main() -> std::io::Result<()> {
+fn main() -> std::io::Result<()> { // Use
     // could use .configure(Fn) as well to set testing routes
+    std::env::set_var("RUST_LOG", "actix_web=info");
+    env_logger::init();
+
     HttpServer::new(|| App::new()
         .data(AppState::new())
+        .wrap(Logger::default())
+        .wrap(Logger::new("%a %{User-Agent}i"))
         .service(
         web::resource("/{name}/{id}/index.html").to(index)
         )
