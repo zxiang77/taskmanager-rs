@@ -1,10 +1,11 @@
+# Reference: https://docs.docker.com/compose/gettingstarted/
 version: '3'
 services:
   web:
     build: .
     ports:
       - "5000:5000"
-    
+
     depends_on:
       - postgresdb
   postgresdb:

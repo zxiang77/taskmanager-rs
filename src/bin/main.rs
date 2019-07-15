@@ -18,6 +18,10 @@ fn root() -> impl Responder {
     HttpResponse::Ok().body("bello!")
 }
 
+fn dev() -> impl Responder {
+
+}
+
 struct AppState {
     visitor_count: Cell<i32>,
 }
@@ -32,19 +36,32 @@ impl AppState {
 
 fn main() -> std::io::Result<()> { // Use
     // could use .configure(Fn) as well to set testing routes
-    std::env::set_var("RUST_LOG", "actix_web=info");
+//    std::env::set_var("RUST_LOG", "actix_web=info");
 //    env_logger::init();
 
-    let c =  get_client();
+    let mut c =  get_client();
+    let res = c.execute("CREATE DATABASE test (
+        ID serial PRIMARY KEY,
+        NAME VARCHAR(50) UNIQUE NOT NULL,
+        DESC VARCHAR(150) UNIQUE NOT NULL,
+        STATE INTEGER NOT NULL,
+        DUE_DATE TIMESTAMP WITHOUT TIME ZONE
+    )", &[]);
+
+    match res {
+        Ok(v) => println!("{}", format!("the result is {}", v)),
+        Err(e) => println!("{}", format!("the error is {}", e))
+    }
 
     HttpServer::new(|| App::new()
         .data(AppState::new())
         .wrap(Logger::default())
         .wrap(Logger::new("%a %{User-Agent}i"))
-        .service(
-        web::resource("/{name}/{id}/index.html").to(index)
-        )
+//        .service(
+//        web::resource("/{name}/{id}/index.html").to(index)
+//        )
         .service(web::resource("/").to(root))
+        .service(web::resource("/dev").to(dev))
     )
         .bind("127.0.0.1:8080")?
         .run()
