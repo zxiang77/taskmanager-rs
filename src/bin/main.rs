@@ -18,8 +18,23 @@ fn root() -> impl Responder {
     HttpResponse::Ok().body("bello!")
 }
 
+use std::fs;
 fn dev() -> impl Responder {
+    println!("reading from index.html");
 
+    // todo find why the info: web::Form<DevReq> args doesn't work
+//    println!("reading from the request {}", info.sql);
+
+    let contents = fs::read_to_string("./static/index.html").expect("Can't read file.");
+    HttpResponse::Ok().body(&contents)
+}
+
+use actix_web::{Result};
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct DevReq {
+    sql: String,
 }
 
 struct AppState {
@@ -34,26 +49,30 @@ impl AppState {
     }
 }
 
-fn main() -> std::io::Result<()> { // Use
+fn main() { // Use
     // could use .configure(Fn) as well to set testing routes
 //    std::env::set_var("RUST_LOG", "actix_web=info");
 //    env_logger::init();
 
     let mut c =  get_client();
-    let res = c.execute("CREATE DATABASE test (
-        ID serial PRIMARY KEY,
-        NAME VARCHAR(50) UNIQUE NOT NULL,
-        DESC VARCHAR(150) UNIQUE NOT NULL,
-        STATE INTEGER NOT NULL,
-        DUE_DATE TIMESTAMP WITHOUT TIME ZONE
-    )", &[]);
+//    let res = c.execute("CREATE DATABASE test;", &[]);
+//    "CREATE DATABASE test (
+//        ID serial PRIMARY KEY,
+//        NAME VARCHAR(50) UNIQUE NOT NULL,
+//        DESC VARCHAR(150) UNIQUE NOT NULL,
+//        STATE INTEGER NOT NULL,
+//        DUE_DATE TIMESTAMP WITHOUT TIME ZONE
+//    )"
+//
+//    match res {
+//        Ok(v) => println!("{}", format!("the result is {}", v)),
+//        Err(e) => println!("{}", format!("the error is {}", e))
+//    }
+    start(8080);
+}
 
-    match res {
-        Ok(v) => println!("{}", format!("the result is {}", v)),
-        Err(e) => println!("{}", format!("the error is {}", e))
-    }
-
-    HttpServer::new(|| App::new()
+fn start(port: i32) {
+    let server = HttpServer::new(|| App::new()
         .data(AppState::new())
         .wrap(Logger::default())
         .wrap(Logger::new("%a %{User-Agent}i"))
@@ -61,9 +80,30 @@ fn main() -> std::io::Result<()> { // Use
 //        web::resource("/{name}/{id}/index.html").to(index)
 //        )
         .service(web::resource("/").to(root))
-        .service(web::resource("/dev").to(dev))
+        .service(web::resource("/dev").route(web::post()).to(dev))
     )
-        .bind("127.0.0.1:8080")?
-        .run()
+        .bind(format!("127.0.0.1:{}", port));
+//    let h = server.unwrap();
+    match server {
+        Ok(svr) => {
+            println!("Server started with port {}", port);
+            svr.run();
+            ()
+        },
+        Err(_) => {
+            // kill -9 $(lsof -n -i :'8080' | grep LISTEN | awk '{print $2}')
+            use std::process::Command;
+            Command::new("sh")
+                .arg("-c")
+                .arg("kill -9 $(lsof -n -i :'8080' | grep LISTEN | awk '{print $2}')")
+                .output()
+                .expect("Unable to run the command.");
+            start(port);
+            ()
+
+        }
+    };
 }
+
 // https://stackoverflow.com/questions/750604/freeing-up-a-tcp-ip-port free up port
+// lsof -n -i :'8080' | grep LISTEN
